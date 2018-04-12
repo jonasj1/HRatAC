@@ -1,0 +1,198 @@
+﻿<html>
+<head>
+
+</head>
+<body>
+    <!-- -->
+    <div id="barchart_material" style="width: 900px; height: 500px;"></div>
+    <div id="timeline" style="width: 900px; height: 500px;"></div>
+  
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['bar']});
+      google.charts.setOnLoadCallback(drawChart);
+
+
+
+        var competencies = ["Feedback","Verbindlichkeit","Informationsaustausch", "Partnerschaftliche Zusammenarbeit", "Umgang mit Fehlern", "Beziehungspflege", "Vertrauenswürdigkeit", "Respektvoller Umgang", "Kommunikationskompetenz", "Konfliktfähigkeit", "Empathiefähigkeit"];
+        var selfpskills = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];   // Selbstwahrnehmung
+        var firstselfp = 0;
+        var avgskills = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];   // Average
+        var minskills = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]; // Minimal Value
+        var maxskills = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];// maximum value
+        var sumskills = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // sum of all given values
+        var counter = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // number of given values
+      	var dataVisArray = [];
+      	var nameID;
+
+      dataVisArray[0]=[];
+      dataVisArray[0][0]="Kompetenz";
+      dataVisArray[0][1]="Selbstwahrnehmung";
+      dataVisArray[0][2]="Fremdwahrnehmung";
+      dataVisArray[0][3] = "Vereinsdurchschnitt";
+
+
+        /*
+
+      var containeralt = document.getElementById("chartContainer");
+      var buto = document.createElement("button");
+      buto.id = "clicker";
+      buto.textContent = "Boring Button";
+      document.body,containeralt.appendChild(buto);
+
+
+      var clickerButton = document.getElementById("clicker");
+      var onButtonClick = function() {
+      clickerButton.textContent = "Oh wow, you clicked me!";
+      };
+
+      clickerButton.addEventListener("click", onButtonClick);
+      */
+
+      function retrieveSchulungItems() {
+
+
+          var clientContext = new SP.ClientContext("/");
+          var oList = clientContext.get_web().get_lists().getByTitle('hr-umfrage');
+
+
+          // Schreibt ALLE Listenelemente geordnet nach Datum (neuestes Element zuerst) in this.collListItem
+          var camlQuery = new SP.CamlQuery();
+          camlQuery.set_viewXml(
+              '<View>'
+              + '<Query>'
+                  + '<OrderBy>'
+                          + '<FieldRef Ascending="FALSE" Name="Datum" LookupId="TRUE"/>'
+                  + '</OrderBy>'
+              + '</Query>'
+              + '</View>'
+              );
+          this.collListItem = oList.getItems(camlQuery);
+          clientContext.load(collListItem);
+          clientContext.executeQueryAsync(Function.createDelegate(this, this.onQuerySucceeded), Function.createDelegate(this, this.onQueryFailed));
+          //console.log(this);
+      }
+
+
+      function onQuerySucceeded(sender, args) {
+          var listItemInfo = '';
+          var UserID = _spPageContextInfo.userId;
+          var listItemEnumerator = collListItem.getEnumerator();
+          var i;
+
+          while (listItemEnumerator.moveNext()) {
+              var oListItem = listItemEnumerator.get_current();
+              var tempColumnValues = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+              var feedbacknehmer = oListItem.get_item('Feedback_x0020_f_x00fc_r');
+              if (feedbacknehmer.$1o_1 == UserID) { nameID = feedbacknehmer.$5f_1 }
+              console.log("nameID: ");
+              console.log(nameID);
+              var feedbackgeber = oListItem.get_item('Feedback_x0020_von');
+              tempColumnValues[0] = Number(oListItem.get_item('Der_x0020_Kooperationspartner_x0'));
+              tempColumnValues[1] = Number(oListItem.get_item('Sorgfalt'));
+              tempColumnValues[2] = Number(oListItem.get_item('Niedergeschlagenheit'));
+              tempColumnValues[3] = Number(oListItem.get_item('Innovation'));
+              tempColumnValues[4] = Number(oListItem.get_item('Umgang_x0020_mit_x0020_Fehlern'));
+              tempColumnValues[5] = Number(oListItem.get_item('Beziehungspflege_x0020__x0028_Ne'));
+              tempColumnValues[6] = Number(oListItem.get_item('Vertrauensw_x00fc_rdigkeit'));
+              tempColumnValues[7] = Number(oListItem.get_item('Respektvoller_x0020_Umgang'));
+              tempColumnValues[8] = Number(oListItem.get_item('Kommunikationskompetenz'));
+              tempColumnValues[9] = Number(oListItem.get_item('Konfliktf_x00e4_higkeit'));
+              tempColumnValues[10] = Number(oListItem.get_item('Empathief_x00e4_higkeit'));
+
+              //console.log(tempColumnValues);
+
+              //console.log("Feedback ist vom Typ: ")
+              //console.log(typeof feedback);
+              //console.log("Feedbacknehmer: ");
+              //console.log(feedbacknehmer);
+              //console.log(feedbacknehmer.$1n_1);
+              //console.log("Feedbackgeber: ");
+              //console.log(feedbackgeber);
+              //console.log(feedbacknehmer.$1n_1);
+
+              if (feedbacknehmer.$1o_1 == UserID && feedbacknehmer.$1o_1 == feedbackgeber.$1o_1 && firstselfp == 0) {
+                  for (i = 0; i < 11; i++) { selfpskills[i] = tempColumnValues[i] }   // Selbstwahrnehmung
+                  firstselfp++;
+              }
+
+
+              if (feedbacknehmer.$1o_1 == UserID && feedbacknehmer.$1o_1 != feedbackgeber.$1o_1) {
+                  for (i = 0; i < 11; i++) {
+                      sumskills[i] += tempColumnValues[i]; // Inkrement bei aktuellem skill
+                      if (tempColumnValues[i] < minskills[i]) { minskills[i] = tempColumnValues[i] }
+                      if (tempColumnValues[i] > maxskills[i]) { maxskills[i] = tempColumnValues[i] }
+                      counter[i] += 1;
+                  }
+              }
+              console.log("sumskills: ");
+              console.log(sumskills);
+          }
+
+          for (i = 0; i < 11; i++) { avgskills[i] = sumskills[i] / counter[i] }
+
+          for (i = 1; i < (competencies.length) ; i++) {
+              if (!dataVisArray[i]) dataVisArray[i] = [];
+              dataVisArray[i][0] = competencies[i];
+              dataVisArray[i][1] = selfpskills[i];
+              dataVisArray[i][2] = avgskills[i];
+              dataVisArray[i][3] = minskills[i]; // muss noch geändert werden
+
+              var data = google.visualization.arrayToDataTable(dataVisArray);
+
+              var options = {
+                  chart: {
+                      title: 'Company Performance',
+                      subtitle: 'Sales, Expenses, and Profit: 2014-2017',
+                  },
+                  bars: 'horizontal' // Required for Material Bar Charts.
+              };
+
+              var chart = new google.charts.Bar(document.getElementById('barchart_material'));
+              chart.draw(data, google.charts.Bar.convertOptions(options));
+          }
+      }
+
+      function onQueryFailed(sender, args) {
+          console.log('Request failed. ' + args.get_message() + '\n' + args.get_stackTrace());
+          console.log("onQueryFailed");
+      }
+
+
+
+
+      function drawChart() {
+          retrieveSchulungItems();
+
+      }
+
+        /*
+        // Button für die vorherige Auswertung
+        var timeline = document.getElementById("timeline");
+        var backButton = document.createElement("button");
+        backButton.id = "backButton";
+        backButton.textContent = "vorherige Auswertung";
+        document.body, timeline.appendChild(backButton);
+        
+          // Button für die nächst spätere Auswertung
+        var frontButton = document.createElement("button");
+        frontButton.id = "backButton";
+        frontButton.textContent = "spätere Auswertung";
+        document.body, timeline.appendChild(frontButton);
+
+
+        var backClick = function() {
+        backButton.textContent = "Oh wow, you clicked me!";
+        };
+        var frontClick = function () {
+            frontButton.textContent = "Oh wow, you clicked me!";
+        };
+
+        clickerButton.addEventListener("click", backClick);
+        clickerButton.addEventListener("click", backClick);
+        */
+    </script>
+
+</body>
+</html>
